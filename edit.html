@@ -25,6 +25,8 @@
   button.sm{padding:4px 10px;font-size:13px}
   button:disabled{opacity:.5;cursor:default}
   .msg{margin-top:10px;font-size:14px;min-height:20px}
+  .req{color:var(--bad)}
+  input.missing{border-color:var(--bad)}
   .ok{color:var(--ok)} .bad{color:var(--bad)}
   .qrbox{background:#fff;border-radius:10px;padding:12px;display:flex;justify-content:center}
   .qrbox svg{width:100%;max-width:240px;height:auto}
@@ -59,17 +61,23 @@
     <div class="panel">
       <h2>Contact details</h2>
       <div class="row">
-        <div><label>First name</label><input id="first"></div>
-        <div><label>Last name</label><input id="last"></div>
-      </div>
-      <label>Organization</label><input id="org">
-      <label>Job title</label><input id="title">
+        <p class="muted" style="margin:0">Fields marked <span class="req">★</span> are required.</p>
       <div class="row">
-        <div><label>Mobile</label><input id="mobile" placeholder="+91 98xxxxxxxx"></div>
-        <div><label>Work phone</label><input id="work"></div>
+        <div><label>First name <span class="req">★</span></label><input id="first"></div>
+        <div><label>Last name <span class="req">★</span></label><input id="last"></div>
       </div>
-      <label>Email</label><input id="email" type="email">
-      <label>Website / LinkedIn</label><input id="url">
+      <label>Organization <span class="req">★</span></label><input id="org">
+      <div class="row">
+        <div><label>Mobile <span class="req">★</span></label><input id="mobile" type="tel" placeholder="+91 98xxxxxxxx"></div>
+        <div><label>Work phone</label><input id="work" type="tel"></div>
+      </div>
+      <div class="row">
+        <div><label>Work email <span class="req">★</span></label><input id="emailWork" type="email"></div>
+        <div><label>Personal email <span class="req">★</span></label><input id="emailPersonal" type="email"></div>
+      </div>
+      <label>Job title</label><input id="title">
+      <label>LinkedIn</label><input id="linkedin" placeholder="linkedin.com/in/…">
+      <label>Website</label><input id="url">
       <label>Address</label><input id="addr">
       <label>Note for this version (optional)</label><input id="note" placeholder="e.g. Joined new organization">
       <div class="btns">
@@ -98,7 +106,8 @@
 </div>
 <script src="qrcode.js"></script>
 <script>
-const F=["first","last","org","title","mobile","work","email","url","addr"];
+const F=["first","last","org","title","mobile","work","emailWork","emailPersonal","linkedin","url","addr"];
+const REQ=["first","last","org","mobile","emailWork","emailPersonal"];
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const b64e=s=>btoa(unescape(encodeURIComponent(s)));
@@ -137,12 +146,13 @@ function vcard(d){
   const L=["BEGIN:VCARD","VERSION:3.0",`N:${esc(d.last)};${esc(d.first)};;;`,`FN:${esc([d.first,d.last].filter(Boolean).join(" "))}`];
   if(d.org)L.push(`ORG:${esc(d.org)}`);if(d.title)L.push(`TITLE:${esc(d.title)}`);
   if(d.mobile)L.push(`TEL;TYPE=CELL:${d.mobile}`);if(d.work)L.push(`TEL;TYPE=WORK,VOICE:${d.work}`);
-  if(d.email)L.push(`EMAIL;TYPE=INTERNET:${d.email}`);if(d.url)L.push(`URL:${esc(d.url)}`);
+  if(d.emailWork)L.push(`EMAIL;TYPE=INTERNET,WORK:${d.emailWork}`);if(d.emailPersonal)L.push(`EMAIL;TYPE=INTERNET,HOME:${d.emailPersonal}`);
+  if(d.linkedin)L.push(`URL;TYPE=LinkedIn:${esc(d.linkedin)}`);if(d.url)L.push(`URL:${esc(d.url)}`);
   if(d.addr)L.push(`ADR;TYPE=WORK:;;${esc(d.addr)};;;;`);
   L.push("END:VCARD");return L.join("\r\n")+"\r\n";
 }
 const form=()=>{const d={};F.forEach(k=>d[k]=$(k).value.trim());return d};
-const fill=d=>F.forEach(k=>$(k).value=d[k]||"");
+const fill=d=>{d={...d};if(d.email&&!d.emailWork)d.emailWork=d.email;F.forEach(k=>{$(k).value=d[k]||"";$(k).classList.remove("missing")})};
 
 let current=null,shas={};
 async function load(){
@@ -158,7 +168,7 @@ async function put(path,content,message){
   shas[path]=r.content.sha;
 }
 $("publish").onclick=async()=>{
-  const d=form();if(!d.first&&!d.last){msg("Please enter a name.","bad");return}
+  const d=form();const miss=REQ.filter(k=>!d[k]);F.forEach(k=>$(k).classList.toggle("missing",miss.includes(k)));if(miss.length){msg("Please fill in all fields marked ★.","bad");$(miss[0]).focus();return}
   $("publish").disabled=true;msg("Publishing…");
   try{
     d.updated=new Date().toISOString();
