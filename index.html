@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact Card</title>
+<style>
+  :root{--bg:#f4f2ee;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3dfd8;--accent:#1f4e79}
+  @media (prefers-color-scheme: dark){:root{--bg:#141416;--card:#1f1f22;--ink:#ececee;--muted:#9a9aa0;--line:#333338;--accent:#7fb2e5}}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
+  .card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;text-align:center}
+  .av{width:72px;height:72px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;margin:0 auto 14px}
+  h1{font-size:22px;margin:0}
+  .t{color:var(--muted);margin:2px 0 0}
+  .o{font-weight:600;margin:2px 0 18px}
+  .save{display:block;width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:17px}
+  ul{list-style:none;padding:0;margin:20px 0 0;text-align:left}
+  li{border-top:1px solid var(--line);padding:11px 2px}
+  li a{color:var(--ink);text-decoration:none;word-break:break-word}
+  li small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="card" id="c"><p class="t">Loading…</p></div>
+<script>
+const $=id=>document.getElementById(id);
+const h=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+fetch("contact.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(d=>{
+  const name=[d.first,d.last].filter(Boolean).join(" ");
+  if(!name){$("c").innerHTML='<p class="t">This card has not been set up yet.</p>';return}
+  document.title=name;
+  const ini=((d.first||"")[0]||"")+((d.last||"")[0]||"");
+  const row=(lbl,val,href)=>val?`<li><small>${lbl}</small><a href="${h(href)}">${h(val)}</a></li>`:"";
+  const url=d.url&&!/^https?:/i.test(d.url)?"https://"+d.url:d.url;
+  $("c").innerHTML=`<div class="av">${h(ini.toUpperCase())}</div>
+  <h1>${h(name)}</h1>${d.title?`<p class="t">${h(d.title)}</p>`:""}<p class="o">${h(d.org)}</p>
+  <a class="save" href="contact.vcf?v=${encodeURIComponent(d.updated||Date.now())}">Save to contacts</a>
+  <ul>${row("Mobile",d.mobile,"tel:"+(d.mobile||"").replace(/\s/g,""))}${row("Work",d.work,"tel:"+(d.work||"").replace(/\s/g,""))}
+  ${row("Email",d.email,"mailto:"+d.email)}${row("Website",d.url,url)}${d.addr?`<li><small>Address</small>${h(d.addr)}</li>`:""}</ul>`;
+}).catch(()=>{$("c").innerHTML='<p class="t">Could not load contact details.</p>'});
+</script>
+</body>
+</html>

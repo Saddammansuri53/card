@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Card Editor</title>
+<style>
+  :root{--bg:#f4f2ee;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#dedad3;--accent:#1f4e79;--ok:#2e7d4f;--bad:#b3261e}
+  @media (prefers-color-scheme: dark){:root{--bg:#161618;--card:#202023;--ink:#ececee;--muted:#9a9aa0;--line:#333338;--accent:#7fb2e5;--ok:#6cc890;--bad:#f28b82}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+  h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;margin:0 0 10px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+  @media (max-width:800px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.04em}
+  input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);font:inherit}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  button{padding:9px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;cursor:pointer}
+  button.ghost{background:transparent;color:var(--accent)}
+  button.sm{padding:4px 10px;font-size:13px}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{margin-top:10px;font-size:14px;min-height:20px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  .qrbox{background:#fff;border-radius:10px;padding:12px;display:flex;justify-content:center}
+  .qrbox svg{width:100%;max-width:240px;height:auto}
+  .link{font-size:13px;word-break:break-all;margin-top:8px}
+  .link a{color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{text-align:left;padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-top:0}
+  .muted{color:var(--muted);font-size:13px}
+  details summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Card Editor</h1>
+  <p class="sub">Change your details and publish. The QR code on your card never changes — it always shows the latest version.</p>
+
+  <div class="panel">
+    <details id="setup">
+      <summary>GitHub connection</summary>
+      <div class="row">
+        <div><label>GitHub username</label><input id="owner" value="Saddammansuri53"></div>
+        <div><label>Repository</label><input id="repo" value="card"></div>
+      </div>
+      <label>Access key (fine-grained token)</label><input id="token" type="password" placeholder="github_pat_…">
+      <p class="muted">Saved only in this browser. Create one at GitHub → Settings → Developer settings → Fine-grained tokens, with access to the <b>card</b> repository only and <b>Contents: Read and write</b>.</p>
+      <div class="btns"><button id="saveConn">Save &amp; load</button></div>
+    </details>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Contact details</h2>
+      <div class="row">
+        <div><label>First name</label><input id="first"></div>
+        <div><label>Last name</label><input id="last"></div>
+      </div>
+      <label>Organization</label><input id="org">
+      <label>Job title</label><input id="title">
+      <div class="row">
+        <div><label>Mobile</label><input id="mobile" placeholder="+91 98xxxxxxxx"></div>
+        <div><label>Work phone</label><input id="work"></div>
+      </div>
+      <label>Email</label><input id="email" type="email">
+      <label>Website / LinkedIn</label><input id="url">
+      <label>Address</label><input id="addr">
+      <label>Note for this version (optional)</label><input id="note" placeholder="e.g. Joined new organization">
+      <div class="btns">
+        <button id="publish">Publish update</button>
+        <button id="reload" class="ghost">Discard changes</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>Your permanent QR code</h2>
+        <div class="qrbox" id="qr"></div>
+        <div class="link">Points to: <a id="pageLink" target="_blank"></a></div>
+        <div class="btns">
+          <button id="dlsvg" class="sm">Download SVG (engraving)</button>
+          <button id="dlpng" class="sm ghost">Download PNG</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Version history</h2>
+        <div id="hist" class="muted">Connect GitHub to see history.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="qrcode.js"></script>
+<script>
+const F=["first","last","org","title","mobile","work","email","url","addr"];
+const $=id=>document.getElementById(id);
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const b64e=s=>btoa(unescape(encodeURIComponent(s)));
+const b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,""))));
+const h=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/([,;])/g,"\\$1");
+function msg(t,cls){$("msg").className="msg "+(cls||"");$("msg").innerHTML=t}
+
+["owner","repo","token"].forEach(k=>{const v=store.get("card_"+k);if(v)$(k).value=v});
+const cfg=()=>({owner:$("owner").value.trim(),repo:$("repo").value.trim(),token:$("token").value.trim()});
+const pageURL=()=>`https://${cfg().owner.toLowerCase()}.github.io/${cfg().repo}/`;
+
+async function gh(path,opt={}){
+  const c=cfg();
+  const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/${path}`,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+c.token,...(opt.headers||{})}});
+  if(r.status===404&&opt.allow404)return null;
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||("HTTP "+r.status))}
+  return r.json();
+}
+
+/* QR of the fixed page link */
+let qrObj,svgStr="";
+function drawQR(){
+  const u=pageURL();$("pageLink").textContent=u;$("pageLink").href=u;
+  qrObj=qrcode(0,"Q");qrObj.addData(u);qrObj.make();
+  const n=qrObj.getModuleCount(),q=4,s=n+q*2;let p="";
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qrObj.isDark(r,c))p+=`M${c+q} ${r+q}h1v1h-1z`;
+  svgStr=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" shape-rendering="crispEdges"><rect width="${s}" height="${s}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`;
+  $("qr").innerHTML=svgStr;
+}
+function dl(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$("dlsvg").onclick=()=>dl("card_qr.svg",new Blob([svgStr],{type:"image/svg+xml"}));
+$("dlpng").onclick=()=>{const n=qrObj.getModuleCount(),q=4,sc=Math.ceil(2000/(n+q*2)),S=(n+q*2)*sc,c=document.createElement("canvas");c.width=c.height=S;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,S,S);x.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(qrObj.isDark(r,k))x.fillRect((k+q)*sc,(r+q)*sc,sc,sc);c.toBlob(b=>dl("card_qr.png",b))};
+
+function vcard(d){
+  const L=["BEGIN:VCARD","VERSION:3.0",`N:${esc(d.last)};${esc(d.first)};;;`,`FN:${esc([d.first,d.last].filter(Boolean).join(" "))}`];
+  if(d.org)L.push(`ORG:${esc(d.org)}`);if(d.title)L.push(`TITLE:${esc(d.title)}`);
+  if(d.mobile)L.push(`TEL;TYPE=CELL:${d.mobile}`);if(d.work)L.push(`TEL;TYPE=WORK,VOICE:${d.work}`);
+  if(d.email)L.push(`EMAIL;TYPE=INTERNET:${d.email}`);if(d.url)L.push(`URL:${esc(d.url)}`);
+  if(d.addr)L.push(`ADR;TYPE=WORK:;;${esc(d.addr)};;;;`);
+  L.push("END:VCARD");return L.join("\r\n")+"\r\n";
+}
+const form=()=>{const d={};F.forEach(k=>d[k]=$(k).value.trim());return d};
+const fill=d=>F.forEach(k=>$(k).value=d[k]||"");
+
+let current=null,shas={};
+async function load(){
+  if(!cfg().token){$("setup").open=true;msg("Add your GitHub access key to start.","bad");return}
+  msg("Loading…");
+  try{
+    for(const f of ["contact.json","contact.vcf"]){const r=await gh("contents/"+f,{allow404:true});shas[f]=r?r.sha:undefined;if(f==="contact.json")current=r?JSON.parse(b64d(r.content)):{}}
+    fill(current);$("note").value="";msg("Loaded the live version.","ok");loadHistory();
+  }catch(e){msg("Could not connect: "+h(e.message),"bad");$("setup").open=true}
+}
+async function put(path,content,message){
+  const r=await gh("contents/"+path,{method:"PUT",body:JSON.stringify({message,content:b64e(content),sha:shas[path]})});
+  shas[path]=r.content.sha;
+}
+$("publish").onclick=async()=>{
+  const d=form();if(!d.first&&!d.last){msg("Please enter a name.","bad");return}
+  $("publish").disabled=true;msg("Publishing…");
+  try{
+    d.updated=new Date().toISOString();
+    const note=$("note").value.trim();
+    const m=`Update: ${[d.first,d.last].join(" ").trim()} – ${d.org||"no organization"}${note?" ("+note+")":""}`;
+    await put("contact.vcf",vcard(d),m+" [vcf]");
+    await put("contact.json",JSON.stringify(d,null,2)+"\n",m);
+    current=d;$("note").value="";
+    msg("Published. Your card will show the new details in about a minute.","ok");loadHistory();
+  }catch(e){msg("Publish failed: "+h(e.message),"bad")}
+  $("publish").disabled=false;
+};
+$("reload").onclick=()=>{if(current)fill(current);msg("")};
+$("saveConn").onclick=()=>{["owner","repo","token"].forEach(k=>store.set("card_"+k,$(k).value.trim()));drawQR();$("setup").open=false;load()};
+
+async function loadHistory(){
+  try{
+    const list=await gh("commits?path=contact.json&per_page=50");
+    if(!list.length){$("hist").textContent="No versions yet.";return}
+    const n=list.length;
+    $("hist").innerHTML=`<table><tr><th>Ver.</th><th>Date</th><th>Change</th><th></th></tr>${list.map((c,i)=>`<tr><td>v${n-i}${i===0?" <b>(live)</b>":""}</td><td>${new Date(c.commit.author.date).toLocaleString()}</td><td>${h(c.commit.message)}</td><td>${i===0?"":`<button class="sm ghost" data-sha="${c.sha}">Load</button>`}</td></tr>`).join("")}</table><p class="muted">"Load" puts an older version into the form. Click Publish to make it live again.</p>`;
+    $("hist").querySelectorAll("button[data-sha]").forEach(b=>b.onclick=async()=>{
+      try{const r=await gh("contents/contact.json?ref="+b.dataset.sha);fill(JSON.parse(b64d(r.content)));msg("Older version loaded into the form — review it, then Publish to restore it.","ok");window.scrollTo({top:0,behavior:"smooth"})}catch(e){msg("Could not load: "+h(e.message),"bad")}
+    });
+  }catch(e){$("hist").textContent="Could not load history: "+e.message}
+}
+drawQR();load();
+</script>
+</body>
+</html>
