@@ -6,49 +6,68 @@
 <meta name="robots" content="noindex">
 <title>Card Editor</title>
 <style>
-  :root{--bg:#f4f2ee;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#dedad3;--accent:#1f4e79;--ok:#2e7d4f;--bad:#b3261e}
-  @media (prefers-color-scheme: dark){:root{--bg:#161618;--card:#202023;--ink:#ececee;--muted:#9a9aa0;--line:#333338;--accent:#7fb2e5;--ok:#6cc890;--bad:#f28b82}}
+  :root{--bg:#f4f2ee;--card:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#dedad3;--accent:#1f4e79;--ok:#2e7d4f;--bad:#b3261e;--warn:#9a5b00;--warnbg:#fff4e0;--soft:#f1f5f9}
+  @media (prefers-color-scheme: dark){:root{--bg:#161618;--card:#202023;--ink:#ececee;--muted:#9a9aa0;--line:#333338;--accent:#7fb2e5;--ok:#6cc890;--bad:#f28b82;--warn:#f0b35a;--warnbg:#3a2c14;--soft:#26282c}}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
   .wrap{max-width:1160px;margin:0 auto;padding:32px 20px 56px}
-  h1{font-size:28px;margin:0 0 6px} h2{font-size:18px;margin:0 0 12px}
+  h1{font-size:28px;margin:0 0 6px} h2{font-size:18px;margin:0 0 4px}
   .sub{color:var(--muted);margin:0 0 18px}
-  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
-  @media (max-width:800px){.grid{grid-template-columns:1fr}}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;grid-template-areas:"form live" "form side";gap:0 20px;align-items:start}
+  .a-form{grid-area:form}.a-live{grid-area:live}.a-side{grid-area:side}
+  @media (max-width:860px){.grid{grid-template-columns:1fr;grid-template-areas:"live" "form" "side"}}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .phead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
   label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:14px 0 6px}
   input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:16px}
   input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  input.changed{border-color:var(--warn);background:var(--warnbg)}
+  input.missing{border-color:var(--bad)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media (max-width:520px){.row{grid-template-columns:1fr}}
-  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-  button{padding:12px 20px;border-radius:10px;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;cursor:pointer}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  button{padding:12px 20px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
   button.ghost{background:transparent;color:var(--accent)}
-  button.sm{padding:4px 10px;font-size:13px}
+  button.sm{padding:6px 12px;font-size:14px}
   button:disabled{opacity:.5;cursor:default}
-  .msg{margin-top:10px;font-size:14px;min-height:20px}
+  .msg{margin-top:12px;font-size:15px;min-height:22px}
   .req{color:var(--bad);font-size:16px;font-weight:700}
   .reqbox{border:1.5px solid var(--accent);border-left:5px solid var(--accent);border-radius:12px;padding:6px 20px 20px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
   .sec{font-weight:700;font-size:17px;margin:16px 0 4px}
   .opt{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
   label.r{color:var(--ink)}
-  input.missing{border-color:var(--bad)}
   .ok{color:var(--ok)} .bad{color:var(--bad)}
+  .chip{font-size:13px;font-weight:600;border-radius:20px;padding:3px 12px;white-space:nowrap}
+  .chip.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+  .chip.warn{background:var(--warnbg);color:var(--warn)}
+  .muted{color:var(--muted);font-size:14px}
+  .fl{list-style:none;margin:12px 0 0;padding:0}
+  .fl li{display:grid;grid-template-columns:130px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+  .fl li .k{color:var(--muted);font-size:14px;font-weight:600}
+  .fl li .v{word-break:break-word}
+  .fl li .none{color:var(--muted)}
+  .fl li.diff{background:var(--warnbg);margin:0 -12px;padding:10px 12px;border-radius:8px;border-top-color:transparent}
+  .was{display:block;color:var(--muted);text-decoration:line-through;font-size:14px}
+  .now{display:block;color:var(--warn);font-weight:600}
+  .now::before{content:"New: ";font-weight:500}
+  @media (max-width:420px){.fl li{grid-template-columns:1fr;gap:2px}}
   .qrbox{background:#fff;border-radius:10px;padding:12px;display:flex;justify-content:center}
-  .qrbox svg{width:100%;max-width:260px;height:auto}
-  .link{font-size:13px;word-break:break-all;margin-top:8px}
+  .qrbox svg{width:100%;max-width:240px;height:auto}
+  .link{font-size:14px;word-break:break-all;margin-top:10px}
   .link a{color:var(--accent)}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  td,th{text-align:left;padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
-  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;border-top:0}
-  .muted{color:var(--muted);font-size:13px}
+  .ver{border-top:1px solid var(--line);padding:12px 0}
+  .ver:first-of-type{border-top:0}
+  .vtop{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .vtitle{font-weight:600}
+  .vtitle .chip{margin-left:6px}
+  .vbody .fl{margin-top:6px}
   details summary{cursor:pointer;font-weight:600}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Card Editor</h1>
-  <p class="sub">Change your details and publish. The QR code on your card never changes — it always shows the latest version.</p>
+  <p class="sub">Update your details and publish. The QR code on your card never changes — it always opens the latest published version.</p>
 
   <div class="panel">
     <details id="setup">
@@ -58,71 +77,86 @@
         <div><label>Repository</label><input id="repo" value="card"></div>
       </div>
       <label>Access key (fine-grained token)</label><input id="token" type="password" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…">
-      <p class="muted">Saved only in this browser. Create one at GitHub → Settings → Developer settings → Fine-grained tokens, with access to the <b>card</b> repository only and <b>Contents: Read and write</b>.</p>
+      <p class="muted">Saved only in this browser.</p>
       <div class="btns"><button id="saveConn">Save &amp; load</button></div>
     </details>
   </div>
 
   <div class="grid">
-    <div class="panel">
-      <h2>Contact details</h2>
-        <div class="reqbox">
-        <div class="sec">Required details <span class="req">*</span></div>
-        <div class="row">
-          <div><label class="r">First name <span class="req">*</span></label><input id="first" required></div>
-          <div><label class="r">Last name <span class="req">*</span></label><input id="last" required></div>
-        </div>
-        <label class="r">Organization <span class="req">*</span></label><input id="org" required>
-        <label class="r">Mobile number <span class="req">*</span></label><input id="mobile" type="tel" placeholder="+91 98xxxxxxxx" required>
-        <div class="row">
-          <div><label class="r">Work email <span class="req">*</span></label><input id="emailWork" type="email" required></div>
-          <div><label class="r">Personal email <span class="req">*</span></label><input id="emailPersonal" type="email" required></div>
-        </div>
+    <div class="a-live">
+      <div class="panel">
+        <div class="phead"><h2>Live on your card now</h2><span id="status" class="chip ok">Up to date</span></div>
+        <div class="muted" id="liveMeta">Connect GitHub to load your live details.</div>
+        <ul class="fl" id="live"></ul>
       </div>
-      <div class="sec" style="margin-top:18px">Optional details <span class="opt">optional</span></div>
-      <div class="row">
-        <div><label>Job title</label><input id="title"></div>
-        <div><label>Work phone</label><input id="work" type="tel"></div>
-      </div>
-      <label>LinkedIn</label><input id="linkedin" placeholder="linkedin.com/in/…">
-      <label>Website</label><input id="url">
-      <label>Address</label><input id="addr">
-      <label>Note for this version (optional)</label><input id="note" placeholder="e.g. Joined new organization">
-      <div class="btns">
-        <button id="publish">Publish update</button>
-        <button id="reload" class="ghost">Discard changes</button>
-      </div>
-      <div class="msg" id="msg"></div>
     </div>
 
-    <div>
+    <div class="a-form">
+      <div class="panel">
+        <h2>Edit details</h2>
+        <p class="muted" style="margin:0">Changed fields are highlighted until you publish.</p>
+        <div class="reqbox" style="margin-top:14px">
+          <div class="sec">Required details <span class="req">*</span></div>
+          <div class="row">
+            <div><label class="r">First name <span class="req">*</span></label><input id="first"></div>
+            <div><label class="r">Last name <span class="req">*</span></label><input id="last"></div>
+          </div>
+          <label class="r">Organization <span class="req">*</span></label><input id="org">
+          <label class="r">Mobile number <span class="req">*</span></label><input id="mobile" type="tel" placeholder="+91 98xxxxxxxx">
+          <div class="row">
+            <div><label class="r">Work email <span class="req">*</span></label><input id="emailWork" type="email"></div>
+            <div><label class="r">Personal email <span class="req">*</span></label><input id="emailPersonal" type="email"></div>
+          </div>
+        </div>
+        <div class="sec" style="margin-top:20px">Optional details <span class="opt">optional</span></div>
+        <div class="row">
+          <div><label>Job title</label><input id="title"></div>
+          <div><label>Work phone</label><input id="work" type="tel"></div>
+        </div>
+        <label>LinkedIn</label><input id="linkedin" placeholder="linkedin.com/in/…">
+        <label>Website</label><input id="url">
+        <label>Address</label><input id="addr">
+        <label>Reason for this update (optional)</label><input id="note" placeholder="e.g. Joined new organization">
+        <div class="btns">
+          <button id="publish">Publish update</button>
+          <button id="reload" class="ghost">Discard changes</button>
+        </div>
+        <div class="msg" id="msg"></div>
+      </div>
+    </div>
+
+    <div class="a-side">
+      <div class="panel">
+        <h2>Version history</h2>
+        <p class="muted" style="margin:0 0 8px">Every published version, newest first. Tap a version to see its details.</p>
+        <div id="hist" class="muted">Connect GitHub to see history.</div>
+      </div>
       <div class="panel">
         <h2>Your permanent QR code</h2>
-        <div class="qrbox" id="qr"></div>
-        <div class="link">Points to: <a id="pageLink" target="_blank"></a></div>
+        <div class="qrbox" id="qr" style="margin-top:10px"></div>
+        <div class="link">Opens: <a id="pageLink" target="_blank" rel="noopener"></a></div>
         <div class="btns">
           <button id="dlsvg" class="sm">Download SVG (engraving)</button>
           <button id="dlpng" class="sm ghost">Download PNG</button>
         </div>
-      </div>
-      <div class="panel">
-        <h2>Version history</h2>
-        <div id="hist" class="muted">Connect GitHub to see history.</div>
       </div>
     </div>
   </div>
 </div>
 <script src="qrcode.js"></script>
 <script>
-const F=["first","last","org","title","mobile","work","emailWork","emailPersonal","linkedin","url","addr"];
+const LABELS={first:"First name",last:"Last name",org:"Organization",mobile:"Mobile",emailWork:"Work email",emailPersonal:"Personal email",title:"Job title",work:"Work phone",linkedin:"LinkedIn",url:"Website",addr:"Address"};
+const F=Object.keys(LABELS);
 const REQ=["first","last","org","mobile","emailWork","emailPersonal"];
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const b64e=s=>btoa(unescape(encodeURIComponent(s)));
 const b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,""))));
-const h=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const h=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const esc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/([,;])/g,"\\$1");
+const fmt=d=>d?new Date(d).toLocaleString(undefined,{day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
 function msg(t,cls){$("msg").className="msg "+(cls||"");$("msg").innerHTML=t}
+const norm=d=>{d={...(d||{})};if(d.email&&!d.emailWork)d.emailWork=d.email;return d};
 
 ["owner","repo","token"].forEach(k=>{const v=store.get("card_"+k);if(v)$(k).value=v});
 const cfg=()=>({owner:$("owner").value.trim(),repo:$("repo").value.trim(),token:$("token").value.replace(/\s+/g,"")});
@@ -132,11 +166,16 @@ async function gh(path,opt={}){
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/${path}`,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+c.token,...(opt.headers||{})}});
   if(r.status===404&&opt.allow404)return null;
-  if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401){const t=c.token;$("setup").open=true;throw new Error(`GitHub did not accept the access key.<br>The key in the box starts with <b>${h(t.slice(0,11))}</b> and is <b>${t.length}</b> characters long. A complete key starts with <b>github_pat_</b> and is about <b>93</b> characters.${t.length<80?" <b>Yours looks cut short</b> — copy it again carefully.":" If the length is right, the key may have been deleted or expired — create a new one."}`)}if(r.status===403||r.status===404)throw new Error("The key works but has no permission for the card repository. Make sure the token has the card repository selected and Contents set to Read and write.");throw new Error(e.message||("HTTP "+r.status))}
+  if(!r.ok){
+    const e=await r.json().catch(()=>({}));
+    if(r.status===401){const t=c.token;$("setup").open=true;throw new Error(`GitHub did not accept the access key. The key in the box is <b>${t.length}</b> characters long; a complete key starts with <b>github_pat_</b> and is about <b>93</b> characters.${t.length<80?" It looks cut short — copy it again.":" It may have expired — create a new one."}`)}
+    if(r.status===403||r.status===404)throw new Error("The access key has no permission for the card repository. Check that it includes the card repository with Contents: Read and write.");
+    throw new Error(h(e.message||("HTTP "+r.status)));
+  }
   return r.json();
 }
 
-/* QR of the fixed page link */
+/* ---------- QR of the fixed page link ---------- */
 let qrObj,svgStr="";
 function drawQR(){
   const u=pageURL();$("pageLink").textContent=u;$("pageLink").href=u;
@@ -150,6 +189,7 @@ function dl(name,blob){const a=document.createElement("a");a.href=URL.createObje
 $("dlsvg").onclick=()=>dl("card_qr.svg",new Blob([svgStr],{type:"image/svg+xml"}));
 $("dlpng").onclick=()=>{const n=qrObj.getModuleCount(),q=4,sc=Math.ceil(2000/(n+q*2)),S=(n+q*2)*sc,c=document.createElement("canvas");c.width=c.height=S;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,S,S);x.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(qrObj.isDark(r,k))x.fillRect((k+q)*sc,(r+q)*sc,sc,sc);c.toBlob(b=>dl("card_qr.png",b))};
 
+/* ---------- contact file ---------- */
 function vcard(d){
   const L=["BEGIN:VCARD","VERSION:3.0",`N:${esc(d.last)};${esc(d.first)};;;`,`FN:${esc([d.first,d.last].filter(Boolean).join(" "))}`];
   if(d.org)L.push(`ORG:${esc(d.org)}`);if(d.title)L.push(`TITLE:${esc(d.title)}`);
@@ -159,16 +199,41 @@ function vcard(d){
   if(d.addr)L.push(`ADR;TYPE=WORK:;;${esc(d.addr)};;;;`);
   L.push("END:VCARD");return L.join("\r\n")+"\r\n";
 }
-const form=()=>{const d={};F.forEach(k=>d[k]=$(k).value.trim());return d};
-const fill=d=>{d={...d};if(d.email&&!d.emailWork)d.emailWork=d.email;F.forEach(k=>{$(k).value=d[k]||"";$(k).classList.remove("missing")})};
 
+/* ---------- form + live comparison ---------- */
+const form=()=>{const d={};F.forEach(k=>d[k]=$(k).value.trim());return d};
 let current=null,shas={};
+function fill(d){d=norm(d);F.forEach(k=>{$(k).value=d[k]||"";$(k).classList.remove("missing")});compare()}
+function fieldList(d,diffWith){
+  return F.map(k=>{
+    const v=(d[k]||"").trim();
+    if(diffWith){
+      const n=(diffWith[k]||"").trim();
+      if(n!==v)return `<li class="diff"><span class="k">${LABELS[k]}</span><span class="v"><span class="was">${v?h(v):"(empty)"}</span><span class="now">${n?h(n):"(removed)"}</span></span></li>`;
+    }
+    if(!v&&!REQ.includes(k))return "";
+    return `<li><span class="k">${LABELS[k]}</span><span class="v${v?"":" none"}">${v?h(v):"—"}</span></li>`;
+  }).join("");
+}
+function compare(){
+  if(!current)return;
+  const live=norm(current),f=form();
+  const changed=F.filter(k=>(f[k]||"")!==(live[k]||"").trim());
+  F.forEach(k=>$(k).classList.toggle("changed",changed.includes(k)));
+  $("live").innerHTML=fieldList(live,f);
+  const s=$("status");
+  if(changed.length){s.className="chip warn";s.textContent=`${changed.length} unpublished change${changed.length>1?"s":""}`}
+  else{s.className="chip ok";s.textContent="Up to date"}
+}
+F.forEach(k=>$(k).addEventListener("input",()=>{$(k).classList.remove("missing");compare()}));
+
 async function load(){
   if(!cfg().token){$("setup").open=true;msg("Add your GitHub access key to start.","bad");return}
   msg("Loading…");
   try{
     for(const f of ["contact.json","contact.vcf"]){const r=await gh("contents/"+f,{allow404:true});shas[f]=r?r.sha:undefined;if(f==="contact.json")current=r?JSON.parse(b64d(r.content)):{}}
-    fill(current);$("note").value="";msg("Loaded the live version.","ok");loadHistory();
+    $("liveMeta").textContent=current.updated?`Last published ${fmt(current.updated)}. This is what people see when they scan your QR code.`:"Nothing published yet.";
+    fill(current);$("note").value="";msg("");loadHistory();
   }catch(e){msg("Could not connect: "+e.message,"bad");$("setup").open=true}
 }
 async function put(path,content,message){
@@ -176,30 +241,51 @@ async function put(path,content,message){
   shas[path]=r.content.sha;
 }
 $("publish").onclick=async()=>{
-  const d=form();const miss=REQ.filter(k=>!d[k]);F.forEach(k=>$(k).classList.toggle("missing",miss.includes(k)));if(miss.length){msg("Please fill in all required fields (marked <span class=\"req\">*</span>).","bad");$(miss[0]).focus();return}
+  const d=form();const miss=REQ.filter(k=>!d[k]);
+  F.forEach(k=>$(k).classList.toggle("missing",miss.includes(k)));
+  if(miss.length){msg("Please fill in all required fields (marked <span class=\"req\">*</span>).","bad");$(miss[0]).focus();return}
+  if(current&&!F.some(k=>d[k]!==(norm(current)[k]||"").trim())){msg("Nothing has changed — your card is already up to date.","ok");return}
   $("publish").disabled=true;msg("Publishing…");
   try{
     d.updated=new Date().toISOString();
     const note=$("note").value.trim();
-    const m=`Update: ${[d.first,d.last].join(" ").trim()} – ${d.org||"no organization"}${note?" ("+note+")":""}`;
+    const m=`Update: ${[d.first,d.last].join(" ").trim()} – ${d.org}${note?" ("+note+")":""}`;
     await put("contact.vcf",vcard(d),m+" [vcf]");
     await put("contact.json",JSON.stringify(d,null,2)+"\n",m);
     current=d;$("note").value="";
-    msg("Published. Your card will show the new details in about a minute.","ok");loadHistory();
+    $("liveMeta").textContent=`Last published ${fmt(d.updated)}. This is what people see when they scan your QR code.`;
+    compare();
+    msg("Published. Your card shows the new details within about a minute.","ok");loadHistory();
   }catch(e){msg("Publish failed: "+e.message,"bad")}
   $("publish").disabled=false;
 };
 $("reload").onclick=()=>{if(current)fill(current);msg("")};
 $("saveConn").onclick=()=>{const t=cfg().token;if(t&&!/^(github_pat_|ghp_)/.test(t)){msg("That doesn't look like an access key — it should start with github_pat_. Your browser may have filled in your password instead.","bad");$("setup").open=true;return}["owner","repo","token"].forEach(k=>store.set("card_"+k,$(k).value.trim()));drawQR();$("setup").open=false;load()};
 
+/* ---------- version history ---------- */
+const verCache={};
+async function getVersion(sha){if(!verCache[sha]){const r=await gh("contents/contact.json?ref="+sha);verCache[sha]=norm(JSON.parse(b64d(r.content)))}return verCache[sha]}
 async function loadHistory(){
   try{
-    const list=await gh("commits?path=contact.json&per_page=50");
+    const all=await gh("commits?path=contact.json&per_page=100");
+    const list=all.filter(c=>/^Update:/.test(c.commit.message));
     if(!list.length){$("hist").textContent="No versions yet.";return}
     const n=list.length;
-    $("hist").innerHTML=`<table><tr><th>Ver.</th><th>Date</th><th>Change</th><th></th></tr>${list.map((c,i)=>`<tr><td>v${n-i}${i===0?" <b>(live)</b>":""}</td><td>${new Date(c.commit.author.date).toLocaleString()}</td><td>${h(c.commit.message)}</td><td>${i===0?"":`<button class="sm ghost" data-sha="${c.sha}">Load</button>`}</td></tr>`).join("")}</table><p class="muted">"Load" puts an older version into the form. Click Publish to make it live again.</p>`;
-    $("hist").querySelectorAll("button[data-sha]").forEach(b=>b.onclick=async()=>{
-      try{const r=await gh("contents/contact.json?ref="+b.dataset.sha);fill(JSON.parse(b64d(r.content)));msg("Older version loaded into the form — review it, then Publish to restore it.","ok");window.scrollTo({top:0,behavior:"smooth"})}catch(e){msg("Could not load: "+h(e.message),"bad")}
+    $("hist").innerHTML=list.map((c,i)=>{
+      const title=c.commit.message.split("\n")[0].replace(/^Update:\s*/,"");
+      return `<div class="ver"><div class="vtop"><div><div class="vtitle">Version ${n-i}${i===0?' <span class="chip ok">Live</span>':""}</div><div class="muted">${fmt(c.commit.author.date)} · ${h(title)}</div></div>
+      <div><button class="sm ghost" data-view="${c.sha}">View details</button>${i===0?"":` <button class="sm ghost" data-load="${c.sha}">Restore</button>`}</div></div>
+      <div class="vbody" id="v_${c.sha}" hidden></div></div>`}).join("");
+    $("hist").querySelectorAll("[data-view]").forEach(b=>b.onclick=async()=>{
+      const box=$("v_"+b.dataset.view);
+      if(!box.hidden){box.hidden=true;b.textContent="View details";return}
+      b.textContent="Loading…";
+      try{box.innerHTML=`<ul class="fl">${fieldList(await getVersion(b.dataset.view))}</ul>`;box.hidden=false;b.textContent="Hide details"}
+      catch(e){b.textContent="View details";msg("Could not load that version: "+e.message,"bad")}
+    });
+    $("hist").querySelectorAll("[data-load]").forEach(b=>b.onclick=async()=>{
+      try{fill(await getVersion(b.dataset.load));msg("That version is now in the form. Review the highlighted changes, then tap Publish to make it live again.","ok");$("first").scrollIntoView({behavior:"smooth",block:"center"})}
+      catch(e){msg("Could not load: "+e.message,"bad")}
     });
   }catch(e){$("hist").textContent="Could not load history: "+e.message}
 }

@@ -9,13 +9,15 @@
   @media (prefers-color-scheme: dark){:root{--bg:#141416;--card:#1f1f22;--ink:#ececee;--muted:#9a9aa0;--line:#333338;--accent:#7fb2e5}}
   *{box-sizing:border-box}
   body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
-  .card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 24px;text-align:center}
-  .av{width:72px;height:72px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;margin:0 auto 14px}
-  h1{font-size:22px;margin:0}
+  .card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 24px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .av{width:76px;height:76px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:27px;font-weight:600;margin:0 auto 14px}
+  h1{font-size:23px;margin:0}
   .t{color:var(--muted);margin:2px 0 0}
-  .o{font-weight:600;margin:2px 0 18px}
-  .save{display:block;width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:17px}
-  ul{list-style:none;padding:0;margin:20px 0 0;text-align:left}
+  .o{font-weight:600;margin:2px 0 20px}
+  .save{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border:0;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font:inherit;font-weight:600;font-size:17px;cursor:pointer}
+  .save svg{width:20px;height:20px}
+  .hint{color:var(--muted);font-size:13px;margin:8px 0 0}
+  ul{list-style:none;padding:0;margin:22px 0 0;text-align:left}
   li{border-top:1px solid var(--line);padding:11px 2px}
   li a{color:var(--ink);text-decoration:none;word-break:break-word}
   li small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
@@ -26,18 +28,36 @@
 <script>
 const $=id=>document.getElementById(id);
 const h=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const isAndroid=/Android/i.test(navigator.userAgent);
+
+/* Android: open the phone's own "Create contact" screen, pre-filled (no file download). */
+function androidIntent(d,fallback){
+  const e=v=>encodeURIComponent(v||"");
+  const name=[d.first,d.last].filter(Boolean).join(" ");
+  const notes=[d.linkedin&&("LinkedIn: "+d.linkedin),d.url&&("Website: "+d.url)].filter(Boolean).join("\n");
+  const x=[["name",name],["company",d.org],["job_title",d.title],["phone",d.mobile],["secondary_phone",d.work],
+           ["email",d.emailWork||d.email],["secondary_email",d.emailPersonal],["postal",d.addr],["notes",notes]]
+          .filter(p=>p[1]).map(p=>`S.${p[0]}=${e(p[1])}`).join(";");
+  return `intent:#Intent;action=android.intent.action.INSERT;type=vnd.android.cursor.dir/raw_contact;${x};S.browser_fallback_url=${e(fallback)};end`;
+}
+
 fetch("contact.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(d=>{
   const name=[d.first,d.last].filter(Boolean).join(" ");
   if(!name){$("c").innerHTML='<p class="t">This card has not been set up yet.</p>';return}
   document.title=name;
   const ini=((d.first||"")[0]||"")+((d.last||"")[0]||"");
   const row=(lbl,val,href)=>val?`<li><small>${lbl}</small><a href="${h(href)}">${h(val)}</a></li>`:"";
-  const fix=u=>u&&!/^https?:/i.test(u)?"https://"+u:u;const url=fix(d.url),li=fix(d.linkedin);
+  const fix=u=>u&&!/^https?:/i.test(u)?"https://"+u:u;
+  const vcf=new URL("contact.vcf?v="+encodeURIComponent(d.updated||Date.now()),location.href).href;
+  const href=isAndroid?androidIntent(d,vcf):vcf;
+  const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
   $("c").innerHTML=`<div class="av">${h(ini.toUpperCase())}</div>
   <h1>${h(name)}</h1>${d.title?`<p class="t">${h(d.title)}</p>`:""}<p class="o">${h(d.org)}</p>
-  <a class="save" href="contact.vcf?v=${encodeURIComponent(d.updated||Date.now())}">Save to contacts</a>
+  <a class="save" href="${h(href)}">${icon}Add to contacts</a>
+  <p class="hint">Opens your phone's contacts with these details filled in.</p>
   <ul>${row("Mobile",d.mobile,"tel:"+(d.mobile||"").replace(/\s/g,""))}${row("Work phone",d.work,"tel:"+(d.work||"").replace(/\s/g,""))}
-  ${row("Work email",d.emailWork||d.email,"mailto:"+(d.emailWork||d.email))}${row("Personal email",d.emailPersonal,"mailto:"+d.emailPersonal)}${row("LinkedIn",d.linkedin,li)}${row("Website",d.url,url)}${d.addr?`<li><small>Address</small>${h(d.addr)}</li>`:""}</ul>`;
+  ${row("Work email",d.emailWork||d.email,"mailto:"+(d.emailWork||d.email))}${row("Personal email",d.emailPersonal,"mailto:"+d.emailPersonal)}
+  ${row("LinkedIn",d.linkedin,fix(d.linkedin))}${row("Website",d.url,fix(d.url))}${d.addr?`<li><small>Address</small>${h(d.addr)}</li>`:""}</ul>`;
 }).catch(()=>{$("c").innerHTML='<p class="t">Could not load contact details.</p>'});
 </script>
 </body>
