@@ -49,7 +49,7 @@
         <div><label>GitHub username</label><input id="owner" value="Saddammansuri53"></div>
         <div><label>Repository</label><input id="repo" value="card"></div>
       </div>
-      <label>Access key (fine-grained token)</label><input id="token" type="password" placeholder="github_pat_…">
+      <label>Access key (fine-grained token)</label><input id="token" type="password" autocomplete="new-password" spellcheck="false" placeholder="github_pat_…">
       <p class="muted">Saved only in this browser. Create one at GitHub → Settings → Developer settings → Fine-grained tokens, with access to the <b>card</b> repository only and <b>Contents: Read and write</b>.</p>
       <div class="btns"><button id="saveConn">Save &amp; load</button></div>
     </details>
@@ -108,14 +108,14 @@ const esc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/(
 function msg(t,cls){$("msg").className="msg "+(cls||"");$("msg").innerHTML=t}
 
 ["owner","repo","token"].forEach(k=>{const v=store.get("card_"+k);if(v)$(k).value=v});
-const cfg=()=>({owner:$("owner").value.trim(),repo:$("repo").value.trim(),token:$("token").value.trim()});
+const cfg=()=>({owner:$("owner").value.trim(),repo:$("repo").value.trim(),token:$("token").value.replace(/\s+/g,"")});
 const pageURL=()=>`https://${cfg().owner.toLowerCase()}.github.io/${cfg().repo}/`;
 
 async function gh(path,opt={}){
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/${path}`,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+c.token,...(opt.headers||{})}});
   if(r.status===404&&opt.allow404)return null;
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||("HTTP "+r.status))}
+  if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)throw new Error("GitHub did not accept the access key. Open 'GitHub connection', clear the box, and paste the full key again (it starts with github_pat_).");if(r.status===403||r.status===404)throw new Error("The key works but has no permission for the card repository. Make sure the token has the card repository selected and Contents set to Read and write.");throw new Error(e.message||("HTTP "+r.status))}
   return r.json();
 }
 
@@ -172,7 +172,7 @@ $("publish").onclick=async()=>{
   $("publish").disabled=false;
 };
 $("reload").onclick=()=>{if(current)fill(current);msg("")};
-$("saveConn").onclick=()=>{["owner","repo","token"].forEach(k=>store.set("card_"+k,$(k).value.trim()));drawQR();$("setup").open=false;load()};
+$("saveConn").onclick=()=>{const t=cfg().token;if(t&&!/^(github_pat_|ghp_)/.test(t)){msg("That doesn't look like an access key — it should start with github_pat_. Your browser may have filled in your password instead.","bad");$("setup").open=true;return}["owner","repo","token"].forEach(k=>store.set("card_"+k,$(k).value.trim()));drawQR();$("setup").open=false;load()};
 
 async function loadHistory(){
   try{
