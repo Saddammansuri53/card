@@ -17,6 +17,12 @@
   .save{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px;border:0;border-radius:12px;background:var(--accent);color:#fff;text-decoration:none;font:inherit;font-weight:600;font-size:17px;cursor:pointer}
   .save svg{width:20px;height:20px}
   .hint{color:var(--muted);font-size:13px;margin:8px 0 0}
+  .help{display:none;text-align:left;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:12px;padding:14px 16px;margin-top:12px;font-size:15px}
+  .help.show{display:block}
+  .help b{display:block;margin-bottom:4px}
+  .help ol{margin:6px 0 10px;padding-left:20px}
+  .help li{border:0;padding:2px 0}
+  .copy{width:100%;padding:11px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-weight:600;cursor:pointer}
   ul{list-style:none;padding:0;margin:22px 0 0;text-align:left}
   li{border-top:1px solid var(--line);padding:11px 2px}
   li a{color:var(--ink);text-decoration:none;word-break:break-word}
@@ -49,15 +55,30 @@ fetch("contact.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(d=
   const row=(lbl,val,href)=>val?`<li><small>${lbl}</small><a href="${h(href)}">${h(val)}</a></li>`:"";
   const fix=u=>u&&!/^https?:/i.test(u)?"https://"+u:u;
   const vcf=new URL("contact.vcf?v="+encodeURIComponent(d.updated||Date.now()),location.href).href;
-  const href=isAndroid?androidIntent(d,vcf):vcf;
+  const back=location.href.split('#')[0]+'#add';
+  const href=isAndroid?androidIntent(d,back):vcf;
   const icon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>';
   $("c").innerHTML=`<div class="av">${h(ini.toUpperCase())}</div>
   <h1>${h(name)}</h1>${d.title?`<p class="t">${h(d.title)}</p>`:""}<p class="o">${h(d.org)}</p>
   <a class="save" href="${h(href)}">${icon}Add to contacts</a>
   <p class="hint">Opens your phone's contacts with these details filled in.</p>
+  <div class="help" id="help"><b>Save in two taps</b>Your browser couldn't open Contacts directly. Instead:
+  <ol><li>Tap the <b style="display:inline">mobile number</b> below.</li><li>In the dialer, choose <b style="display:inline">Create new contact</b>.</li></ol>
+  <button class="copy" id="copy">Copy all details</button></div>
   <ul>${row("Mobile",d.mobile,"tel:"+(d.mobile||"").replace(/\s/g,""))}${row("Work phone",d.work,"tel:"+(d.work||"").replace(/\s/g,""))}
   ${row("Work email",d.emailWork||d.email,"mailto:"+(d.emailWork||d.email))}${row("Personal email",d.emailPersonal,"mailto:"+d.emailPersonal)}
   ${row("LinkedIn",d.linkedin,fix(d.linkedin))}${row("Website",d.url,fix(d.url))}${d.addr?`<li><small>Address</small>${h(d.addr)}</li>`:""}</ul>`;
+  const showHelp=()=>{$("help").classList.add("show");$("help").scrollIntoView({behavior:"smooth",block:"center"})};
+  if(isAndroid){
+    $("c").querySelector(".save").addEventListener("click",()=>{
+      setTimeout(()=>{if(document.visibilityState==="visible"&&document.hasFocus())showHelp()},2500);
+    });
+    if(location.hash==="#add"){history.replaceState(null,"",location.pathname);showHelp()}
+  }
+  $("copy").onclick=()=>{
+    const t=[name,d.title,d.org,d.mobile&&("Mobile: "+d.mobile),d.work&&("Work: "+d.work),(d.emailWork||d.email)&&("Work email: "+(d.emailWork||d.email)),d.emailPersonal&&("Personal email: "+d.emailPersonal),d.linkedin&&("LinkedIn: "+d.linkedin),d.url&&("Website: "+d.url),d.addr].filter(Boolean).join("\n");
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$("copy").textContent="Copied ✓"}).catch(()=>{prompt("Copy these details:",t)});
+  };
 }).catch(()=>{$("c").innerHTML='<p class="t">Could not load contact details.</p>'});
 </script>
 </body>
