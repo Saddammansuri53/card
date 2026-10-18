@@ -25,7 +25,11 @@
   button.sm{padding:4px 10px;font-size:13px}
   button:disabled{opacity:.5;cursor:default}
   .msg{margin-top:10px;font-size:14px;min-height:20px}
-  .req{color:var(--bad)}
+  .req{color:var(--bad);font-size:16px;font-weight:700}
+  .reqbox{border:1.5px solid var(--accent);border-left:5px solid var(--accent);border-radius:10px;padding:4px 14px 14px;background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .sec{font-weight:700;font-size:15px;margin:12px 0 2px}
+  .opt{font-size:11px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
+  label.r{color:var(--ink)}
   input.missing{border-color:var(--bad)}
   .ok{color:var(--ok)} .bad{color:var(--bad)}
   .qrbox{background:#fff;border-radius:10px;padding:12px;display:flex;justify-content:center}
@@ -60,22 +64,24 @@
   <div class="grid">
     <div class="panel">
       <h2>Contact details</h2>
-      <div class="row">
-        <p class="muted" style="margin:0">Fields marked <span class="req">★</span> are required.</p>
-      <div class="row">
-        <div><label>First name <span class="req">★</span></label><input id="first"></div>
-        <div><label>Last name <span class="req">★</span></label><input id="last"></div>
+        <div class="reqbox">
+        <div class="sec">Required details <span class="req">*</span></div>
+        <div class="row">
+          <div><label class="r">First name <span class="req">*</span></label><input id="first" required></div>
+          <div><label class="r">Last name <span class="req">*</span></label><input id="last" required></div>
+        </div>
+        <label class="r">Organization <span class="req">*</span></label><input id="org" required>
+        <label class="r">Mobile number <span class="req">*</span></label><input id="mobile" type="tel" placeholder="+91 98xxxxxxxx" required>
+        <div class="row">
+          <div><label class="r">Work email <span class="req">*</span></label><input id="emailWork" type="email" required></div>
+          <div><label class="r">Personal email <span class="req">*</span></label><input id="emailPersonal" type="email" required></div>
+        </div>
       </div>
-      <label>Organization <span class="req">★</span></label><input id="org">
+      <div class="sec" style="margin-top:18px">Optional details <span class="opt">optional</span></div>
       <div class="row">
-        <div><label>Mobile <span class="req">★</span></label><input id="mobile" type="tel" placeholder="+91 98xxxxxxxx"></div>
+        <div><label>Job title</label><input id="title"></div>
         <div><label>Work phone</label><input id="work" type="tel"></div>
       </div>
-      <div class="row">
-        <div><label>Work email <span class="req">★</span></label><input id="emailWork" type="email"></div>
-        <div><label>Personal email <span class="req">★</span></label><input id="emailPersonal" type="email"></div>
-      </div>
-      <label>Job title</label><input id="title">
       <label>LinkedIn</label><input id="linkedin" placeholder="linkedin.com/in/…">
       <label>Website</label><input id="url">
       <label>Address</label><input id="addr">
@@ -168,7 +174,7 @@ async function put(path,content,message){
   shas[path]=r.content.sha;
 }
 $("publish").onclick=async()=>{
-  const d=form();const miss=REQ.filter(k=>!d[k]);F.forEach(k=>$(k).classList.toggle("missing",miss.includes(k)));if(miss.length){msg("Please fill in all fields marked ★.","bad");$(miss[0]).focus();return}
+  const d=form();const miss=REQ.filter(k=>!d[k]);F.forEach(k=>$(k).classList.toggle("missing",miss.includes(k)));if(miss.length){msg("Please fill in all required fields (marked <span class=\"req\">*</span>).","bad");$(miss[0]).focus();return}
   $("publish").disabled=true;msg("Publishing…");
   try{
     d.updated=new Date().toISOString();
