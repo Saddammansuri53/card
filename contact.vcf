@@ -1,5 +1,9 @@
 BEGIN:VCARD
 VERSION:3.0
-N:;;;;
-FN:
+N:Mansuri;Saddam;;;
+FN:Saddam Mansuri
+ORG:Confederation of Indian Industry
+TEL;TYPE=CELL:9575322470
+EMAIL;TYPE=INTERNET,WORK:saddam.mansuri@cii.in
+EMAIL;TYPE=INTERNET,HOME:saddammansuri53@gmail.com
 END:VCARD
