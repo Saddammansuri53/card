@@ -132,7 +132,7 @@ async function gh(path,opt={}){
   const c=cfg();
   const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/${path}`,{...opt,headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+c.token,...(opt.headers||{})}});
   if(r.status===404&&opt.allow404)return null;
-  if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)throw new Error("GitHub did not accept the access key. Open 'GitHub connection', clear the box, and paste the full key again (it starts with github_pat_).");if(r.status===403||r.status===404)throw new Error("The key works but has no permission for the card repository. Make sure the token has the card repository selected and Contents set to Read and write.");throw new Error(e.message||("HTTP "+r.status))}
+  if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401){const t=c.token;$("setup").open=true;throw new Error(`GitHub did not accept the access key.<br>The key in the box starts with <b>${h(t.slice(0,11))}</b> and is <b>${t.length}</b> characters long. A complete key starts with <b>github_pat_</b> and is about <b>93</b> characters.${t.length<80?" <b>Yours looks cut short</b> — copy it again carefully.":" If the length is right, the key may have been deleted or expired — create a new one."}`)}if(r.status===403||r.status===404)throw new Error("The key works but has no permission for the card repository. Make sure the token has the card repository selected and Contents set to Read and write.");throw new Error(e.message||("HTTP "+r.status))}
   return r.json();
 }
 
@@ -169,7 +169,7 @@ async function load(){
   try{
     for(const f of ["contact.json","contact.vcf"]){const r=await gh("contents/"+f,{allow404:true});shas[f]=r?r.sha:undefined;if(f==="contact.json")current=r?JSON.parse(b64d(r.content)):{}}
     fill(current);$("note").value="";msg("Loaded the live version.","ok");loadHistory();
-  }catch(e){msg("Could not connect: "+h(e.message),"bad");$("setup").open=true}
+  }catch(e){msg("Could not connect: "+e.message,"bad");$("setup").open=true}
 }
 async function put(path,content,message){
   const r=await gh("contents/"+path,{method:"PUT",body:JSON.stringify({message,content:b64e(content),sha:shas[path]})});
@@ -186,7 +186,7 @@ $("publish").onclick=async()=>{
     await put("contact.json",JSON.stringify(d,null,2)+"\n",m);
     current=d;$("note").value="";
     msg("Published. Your card will show the new details in about a minute.","ok");loadHistory();
-  }catch(e){msg("Publish failed: "+h(e.message),"bad")}
+  }catch(e){msg("Publish failed: "+e.message,"bad")}
   $("publish").disabled=false;
 };
 $("reload").onclick=()=>{if(current)fill(current);msg("")};
